@@ -26,7 +26,7 @@ r2d = 1/d2r;          % rad to deg conversion
 %% Simulation Related Parameters
 N_orb = 10;           % number of orbits (1h day ~ 16 orb) per simulation [-]
 q0 = [1 0 0 0]';      % initial attitude (BODY wrt ECI) quaternion [q_v,q_s] [-]
-w0 = 30*[1;1;1]*d2r;  % initial angular velocity (BODY wrt ECI) [rad/s]
+w0 = 10/sqrt(3)*[1;1;1]*d2r;  % initial angular velocity (BODY wrt ECI) [rad/s]
 no_C  = 0;            % duration of no-control after release [s] /1800 = 30 min/
 AirDens  = 'low';     % air density {low, medium, high}
 att_solv = 'RK4';     % attitude propagation solver {'RK4','ODE45'}
@@ -39,9 +39,9 @@ saveExcel = 0;        % save data to excel file for implementation testing
 
 % A - Magnetorques (MTQs)
 m_rise  = .01;  % magnetorquers rise/fall time [s]
-m_x_max = .002; % max magnetic dipole moment along x-axis [A.m^2]
-m_y_max = .002; % max magnetic dipole moment along y-axis [A.m^2]
-m_z_max = .002; % max magnetic dipole moment along z-axis [A.m^2]
+m_x_max = 2*.001156698132; % max magnetic dipole moment along x-axis [A.m^2]
+m_y_max = 2*0.001156698132; % max magnetic dipole moment along y-axis [A.m^2]
+m_z_max = 0.0;%01156698132; % max magnetic dipole moment along z-axis [A.m^2]
 if MC_on        % adding 15% uncertainty truncated at 3sigma
     m_all_unc = truncatedGaussian(m_x_max/15,3*m_x_max/15,3);
     m_x_max = m_x_max + m_all_unc(1);
@@ -50,7 +50,7 @@ if MC_on        % adding 15% uncertainty truncated at 3sigma
 end
 m_max = [m_x_max m_y_max m_z_max]';
 
-m_res_mag = .0001;   % res. mag. dipole moment magnitude [A.m^2]
+m_res_mag = .000;   % res. mag. dipole moment magnitude [A.m^2]
 if MC_on             % res. mag. dipole moment direction (unit vector) [-]
     az = 2*pi*rand; el = 2*pi*rand;
     m_res_dir = [sin(az)*cos(el); sin(az)*sin(el); cos(az)];
@@ -67,10 +67,10 @@ m_z_pol = 1;  % magnetorquer polarity in z-axis [-]
 m_pol   = [m_x_pol m_y_pol m_z_pol]';
 
 % B - Magnetometers (MTMs)
-mag1_rms = .5;       % MTM 1 noise (rms) [muT]
-mag2_rms = .5;       % MTM 2 noise (rms) [muT]
-mag1_res = .3;       % MTM 1 resolution [muT/LSb] (BMX055=.3, MAG3110=.1)
-mag2_res = .3;       % MTM 2 resolution [muT/LSb] (BMX055=.3, MAG3110=.1)
+mag1_rms = .32;       % MTM 1 noise (rms) [muT] 3.2mG
+mag2_rms = .32;       % MTM 2 noise (rms) [muT] 3.2 mG
+mag1_res = 100/2281;       % MTM 1 resolution [muT/LSb] (BMX055=.3, MAG3110=.1)
+mag2_res = 100/2281;       % MTM 2 resolution [muT/LSb] (BMX055=.3, MAG3110=.1)
 mag1_S2B = [1 0 0;0 1 0;0 0 -1]; % MTM 1 frame to B frame rotation
 mag2_S2B = [1 0 0;0 1 0;0 0 -1]; % MTM 2 frame to B frame rotation
 
@@ -90,24 +90,24 @@ end
 mag1_bias = mag1_bias_mag*mag1_bias_dir; % MTM 1 bias vector [muT]
 mag2_bias = mag2_bias_mag*mag2_bias_dir; % MTM 2 bias vector [muT]
 
-w1 = .5; % weight factor of MTM 1
-w2 = .5; % weight factor of MTM 2
+w1 = 1; % weight factor of MTM 1
+w2 = 0; % weight factor of MTM 2
 
 % C - Mass & Dimension
-mass = .6;       % nominal mass  [kg]
+mass = 1.33;       % nominal mass  [kg]
 mass_uncer = .1; % +/- uncertainty on mass (for MC) [kg]
 
 if MC_on
     mass = mass + truncatedGaussian(mass_uncer,3*mass_uncer);
 end
 
-d_x   = .05;   % main body x-axis length [m]
-d_y   = .05;   % main body y-axis length [m]
-d_z   = .178;  % main body z-axis length [m]
+d_x   = .1;   % main body x-axis length [m]
+d_y   = .1;   % main body y-axis length [m]
+d_z   = .1;  % main body z-axis length [m]
 
-d_x_p = .0640; % plate x-axis length [m]
-d_y_p = .0016; % plate y-axis length [m]
-d_z_p = .1920; % plate z-axis length [m]
+d_x_p = .1; % plate x-axis length [m]
+d_y_p = .1; % plate y-axis length [m]
+d_z_p = .1; % plate z-axis length [m]
 
 area_x = (d_y+d_y_p)*d_z+(d_z_p-d_z)*d_y_p; % cross-sectional area x face [m^2]
 area_y = d_x_p*d_z_p;                       % cross-sectional area y face [m^2]
@@ -150,11 +150,11 @@ I    = diag([I_x,I_y,I_z]);    % inertia matrix [kg.m^2]
 Iinv = inv(I);                 % inertia matrix inverse [kg^-1.m^-2]
 
 %% Orbit Related Parameters
-alt    = 350e3;           % altitude (LEO) [m]
+alt    = 414e3;           % altitude (LEO) [m]
 re     = 6378.137e3;      % Earth (equatorial) radius [m]
 a      = re + alt;        % semi-major axis (assuming circular orbit) [m]
-ecc    = 0;               % eccentricity [-]
-inc    = 96.84895*d2r;    % orbital inclination [rad]
+ecc    = 0.0001811;               % eccentricity [-]
+inc    = 51.6394*d2r;    % orbital inclination [rad]
 omega  = 0;               % argument of perigee (periapsis) [rad]
 OMEGA  = 210*d2r;         % RAAN [rad]
 M0     = 60*d2r;          % mean anomaly at epoch (t0) [rad]
@@ -180,14 +180,14 @@ switch AirDens
 end
 
 %% Detuble Algorithm Related Parameters
-f_c   = 4;            % control/sensing loop frequency [Hz]
+f_c   = 1;            % control/sensing loop frequency [Hz]
 T_c   = 1/f_c;        % control/sensing loop sampling rate [s]
 delta = .6;           % MTQs duty cycle [fraction of T_c]
-w_des = 5*d2r;        % desired detumbling (stopping) rate for all axes [rad/s]
+w_des = 0.1*d2r;        % desired detumbling (stopping) rate for all axes [rad/s]
 alpha = 1/200;        % filter costant (detumbling parameter) [-]
 p_tmb = 2*[1;1;1];    % initial tumbling parameter [muT/s]
-p_bar_l = .075;       % lower tumble parameter threshold [muT/s]
-p_bar_u = .085;       % upper tumble parameter threshold [muT/s]
+p_bar_l = 0.004375/sqrt(3)/125;       % lower tumble parameter threshold [muT/s]
+p_bar_u = 10/sqrt(3)/125;       % upper tumble parameter threshold [muT/s]
 C_det = 0;            % detumbled counter [-]
 C_tum = 0;            % tumbling counter [-]
 t_bar_det = 1*60*60;  % confirmation time for detumbled state [s]
