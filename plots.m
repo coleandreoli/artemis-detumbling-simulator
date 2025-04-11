@@ -165,8 +165,8 @@ lon_gs = 4.3736;
 [lon,lati,~] = cart2sph(R_E(1,:),R_E(2,:),R_E(3,:));
 
 figure
-load coast % requires Mapping Toolbox
-plot(long,lat,'k'), hold on
+which coastlines.mat -all 
+plot(lon,lati,'k'), hold on
 
 pa = plot(r2d*lon(1),r2d*lati(1),'b','LineWidth',2);
 pb = plot(r2d*lon(1),r2d*lati(1),'k','LineWidth',3);
